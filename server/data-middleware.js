@@ -3,7 +3,7 @@
 module.exports = function dataMiddleware({ ready, refresh, flush }) {
   return async (req, res, next) => {
     try {
-      await ready;
+      await (typeof ready === 'function' ? ready() : ready);
       await refresh();
     } catch (e) {
       console.error('data layer error', e);

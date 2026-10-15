@@ -55,17 +55,21 @@ function createStore({ collections, sqliteFile, pgSchema }) {
   if (/\.neon\.tech/.test(url) && process.env.PG_DRIVER !== 'pg') {
     // Neon serverless driver: same Pool API as pg, but over WebSockets on port 443 (recommended for Vercel functions)
     const neon = require('@neondatabase/serverless');
-    if (typeof WebSocket !== 'undefined') neon.neonConfig.webSocketConstructor = WebSocket;
-    pool = new neon.Pool({ connectionString: url, max: 3 });
+    // Neon's guidance for Node runtimes: use the ws package as the WebSocket implementation
+    neon.neonConfig.webSocketConstructor = require('ws');
+    pool = new neon.Pool({ connectionString: url, max: 3, connectionTimeoutMillis: 8000 });
   } else {
     const { Pool } = require('pg');
     pool = new Pool({ connectionString: url, ssl: local ? false : { rejectUnauthorized: true }, max: 3 });
   }
+  // A dropped idle connection must not crash the process; the pool replaces it on the next query.
+  pool.on('error', (e) => console.error('db pool error:', e && (e.message || e.type || e)));
   // Each app lives in its own schema of the same database (works with Neon's pooled endpoint: no startup options needed)
   const schema = String(process.env.DB_SCHEMA || pgSchema || 'public').replace(/[^a-z0-9_]/gi, '');
   const T = (c) => `"${schema}".${c}`;
   const snapshot = {}; // collection -> Map(id -> json string) of what the DB holds
-  let chain = Promise.resolve();
+  let tail = Promise.resolve(); // serializes writes; never rejects, so one failed write can't block later requests
+  const pending = new Set();       // writes not yet settled: flush() reports their outcome
 
   async function migrate() {
     const dir = path.join(__dirname, 'migrations');
@@ -83,7 +87,8 @@ function createStore({ collections, sqliteFile, pgSchema }) {
         await client.query(`INSERT INTO ${T('schema_migrations')} (name) VALUES ($1) ON CONFLICT DO NOTHING`, [file]);
         await client.query('COMMIT');
         applied.push(file);
-      } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+      } catch (e) { await rollback(client); client.release(true); throw e; }
+      client.release();
     }
     return applied;
   }
@@ -95,6 +100,7 @@ function createStore({ collections, sqliteFile, pgSchema }) {
     }
     return target;
   }
+  async function rollback(client) { try { await client.query('ROLLBACK'); } catch {} }
   async function write(changes) {
     if (!changes.length) return;
     const client = await pool.connect();
@@ -107,14 +113,15 @@ function createStore({ collections, sqliteFile, pgSchema }) {
         }
       }
       await client.query('COMMIT');
-    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    } catch (e) { await rollback(client); client.release(true); throw e; }
+    client.release();
   }
   return {
     kind: 'postgres',
     schema,
     migrate,
     async init() { await migrate(); return loadInto({}); },
-    async refresh(target) { await chain; await loadInto(target); },
+    async refresh(target) { await tail; await loadInto(target); },
     save(data) {
       const changes = [];
       for (const c of collections) {
@@ -125,10 +132,13 @@ function createStore({ collections, sqliteFile, pgSchema }) {
         if (up.length || del.length) changes.push({ c, up, del });
         snapshot[c] = next;
       }
-      chain = chain.then(() => write(changes));
-      return chain;
+      const p = tail.then(() => write(changes));
+      tail = p.catch((e) => console.error('db write failed:', e && (e.message || e.type || e)));
+      pending.add(p);
+      p.then(() => pending.delete(p), () => pending.delete(p));
+      return p;
     },
-    flush() { return chain; },
+    flush() { return Promise.all([...pending, tail]); },
     end() { return pool.end(); },
   };
 }

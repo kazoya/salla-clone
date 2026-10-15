@@ -33,13 +33,22 @@ function seedDemo() {
   return true;
 }
 
-const ready = store.init().then((data) => {
-  fill(data);
-  const seeded = seedDemo();
-  const admin = ensureAdmin(db.users);
-  if (seeded || admin) writeDb(db);
-  return store.flush();
-});
+// Connect, migrate, seed. A failure (e.g. a dropped connection on a cold start) is retried on the next request
+// instead of leaving this instance broken.
+let readyPromise = null;
+function ready() {
+  if (!readyPromise) {
+    readyPromise = store.init().then((data) => {
+      fill(data);
+      const seeded = seedDemo();
+      const admin = ensureAdmin(db.users);
+      if (seeded || admin) writeDb(db);
+      return store.flush();
+    }).catch((e) => { readyPromise = null; throw e; });
+  }
+  return readyPromise;
+}
+ready().catch((e) => console.error('data init failed (will retry):', e && (e.message || e.type || e)));
 
 async function refresh() {
   if (store.kind !== 'postgres') return;
