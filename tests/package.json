@@ -1,0 +1,1 @@
+﻿{ "name": "e2e", "private": true, "scripts": { "test": "node e2e.js" }, "dependencies": { "puppeteer-core": "^23.0.0" } }

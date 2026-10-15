@@ -1,0 +1,14 @@
+﻿node_modules/
+dist/
+.vite/
+*.log
+.env
+.env.*
+server/data/
+server/uploads/
+server/secret.txt
+*.sqlite
+*.sqlite-*
+db.json
+db.json.*
+.chrome-*/
