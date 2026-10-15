@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const BASE_DIR = process.env.VERCEL ? '/tmp' : __dirname; // Vercel: only /tmp is writable (demo data resets)
 const Database = require('better-sqlite3');
 
 const COLLECTIONS = ['stores', 'products', 'carts', 'orders', 'users'];
-const dataDir = path.join(__dirname, 'data');
+const dataDir = path.join(BASE_DIR, 'data');
 const jsonPath = path.join(dataDir, 'db.json');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 

@@ -12,3 +12,5 @@ server/secret.txt
 db.json
 db.json.*
 .chrome-*/
+.vercel
+.env*

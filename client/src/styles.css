@@ -268,3 +268,6 @@ h2 {
   border: 2px solid var(--brand);
   border-radius: 50%;
 }
+
+/* live review fixes */
+*, *::before, *::after { box-sizing: border-box; }

@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const BASE_DIR = process.env.VERCEL ? '/tmp' : __dirname; // Vercel: only /tmp is writable (demo data resets)
 const crypto = require('crypto');
 
-const dbPath = path.join(__dirname, 'data', 'db.json');
+const dbPath = path.join(BASE_DIR, 'data', 'db.json');
 
 function ensureDataDirectoryExists() {
-  const dataDir = path.join(__dirname, 'data');
+  const dataDir = path.join(BASE_DIR, 'data');
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir);
+    fs.mkdirSync(dataDir, { recursive: true });
   }
 }
 
@@ -24,6 +25,16 @@ function writeDb(data) {
 ensureDataDirectoryExists();
 const store = require('./sqlite-store');
 let db = readDb();
+
+// Demo seed (cold start on Vercel, or empty local DB): one sample store with products
+if (db.stores.length === 0) {
+  const demoStoreId = crypto.randomUUID();
+  db.stores.push({ id: demoStoreId, name: 'متجر تجريبي - عطور وهدايا', ownerId: null, demo: true });
+  for (const [name, price] of [['عطر العود الملكي', 249], ['شمعة معطرة', 59], ['باقة ورد جوري', 120], ['بخور فاخر', 89]]) {
+    db.products.push({ id: crypto.randomUUID(), storeId: demoStoreId, name, price });
+  }
+  writeDb(db);
+}
 
 function getStores() {
   return db.stores;

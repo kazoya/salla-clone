@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('./db');
 const fs = require('fs');
 const path = require('path');
+const BASE_DIR = process.env.VERCEL ? '/tmp' : __dirname; // Vercel: only /tmp is writable (demo data resets)
 const crypto = require('crypto');
 const multer = require('multer');
 
@@ -13,7 +14,7 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(BASE_DIR, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -21,7 +22,7 @@ if (!fs.existsSync(uploadsDir)) {
 // JWT secret
 let jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
-  const secretPath = path.join(__dirname, 'data', 'secret.txt');
+  const secretPath = path.join(BASE_DIR, 'data', 'secret.txt');
   if (fs.existsSync(secretPath)) {
     jwtSecret = fs.readFileSync(secretPath, 'utf8').trim();
   } else {
@@ -397,6 +398,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'خطأ في الخادم' });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+module.exports = app;

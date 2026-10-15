@@ -7,6 +7,28 @@ An e-commerce demo inspired by Salla: stores, products with photos, cart, orders
 > مشروع تعليمي/تجريبي — ليس تابعاً لأي علامة تجارية حقيقية، ولا يستخدم أي شعار أو كود منها. الدفع وهمي بالكامل.
 > Educational demo. Not affiliated with any real brand; no logos or code copied. Payments are mock only.
 
+## النسخة الحية (تجريبية) / Live demo
+
+**https://salla-clone.vercel.app**
+
+> ⚠️ نسخة تجريبية: البيانات والصور تُحذف تلقائياً عند إعادة تشغيل الخادم، والدفع وهمي. لا تُدخل معلومات حقيقية.
+
+Deployed on Vercel: the Vite client is static, and the Express app runs as one serverless function (`api/index.js`) for `/api/*` and `/uploads/*`.
+Demo limits:
+- SQLite lives in `/tmp` of each function instance, seeded with sample data on every cold start. Data (accounts, orders/ads, photos) disappears when the instance is recycled.
+- Several instances can run at once and do not share data. A request can land on another instance, where a new account or item does not exist yet; in that case register again.
+- `JWT_SECRET` is a Vercel environment variable (never in git), so logins stay valid across instances.
+- Uploads: 2 MB max, stored in `/tmp` (temporary).
+- For a permanent version, use a hosted database and object storage instead of `/tmp`.
+
+### Deploy your own
+
+```bash
+npx vercel link
+npx vercel env add JWT_SECRET production   # paste a long random string
+npx vercel --prod
+```
+
 ## لقطات الشاشة / Screenshots
 
 | سطح المكتب / Desktop | الجوال / Mobile |
