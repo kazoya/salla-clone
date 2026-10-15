@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Smart Sport Watch">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7e22ce"/><stop offset="1" stop-color="#3b0764"/></linearGradient></defs>
+<rect width="800" height="600" fill="url(#g)"/>
+<circle cx="600" cy="230" r="199" fill="#d8b4fe" opacity=".18"/>
+<circle cx="180" cy="420" r="139" fill="#d8b4fe" opacity=".12"/>
+<rect x="300" y="170" width="200" height="200" rx="74" fill="none" stroke="#d8b4fe" stroke-width="10" opacity=".85" transform="rotate(15 400 270)"/>
+<text x="400" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700" fill="#fff">Smart Sport Watch</text>
+</svg>

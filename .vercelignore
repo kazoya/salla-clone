@@ -3,3 +3,7 @@ node_modules
 .env*
 server/node_modules
 client/node_modules
+.env
+.neon/
+.neon
+neon.ts

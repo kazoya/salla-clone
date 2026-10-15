@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { t } from '../i18n';
 import { createOrder, payOrder } from '../api';
 
 const Checkout = ({ sessionId }) => {
@@ -36,45 +37,45 @@ const Checkout = ({ sessionId }) => {
 
   return (
     <div>
-      <h1>الدفع</h1>
+      <h1>{t('الدفع')}</h1>
       <input
         type="text"
         value={customerName}
         onChange={(e) => setCustomerName(e.target.value)}
-        placeholder="اسم العميل"
+        placeholder={t('اسم العميل')}
         data-testid="customer-name"
       />
       <input
         type="text"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        placeholder="رقم الهاتف"
+        placeholder={t('رقم الهاتف')}
         data-testid="customer-phone"
       />
       <input
         type="text"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
-        placeholder="العنوان"
+        placeholder={t('العنوان')}
         data-testid="customer-address"
       />
-      <button onClick={handleCreateOrder} data-testid="create-order">إنشاء الطلب</button>
+      <button onClick={handleCreateOrder} data-testid="create-order">{t('إنشاء الطلب')}</button>
       {orderId && (
         <>
-          <h2>رقم الطلب: {orderId}</h2>
+          <h2>{t('رقم الطلب:')} {orderId}</h2>
           <input
             type="text"
             value={cardNumber}
             onChange={(e) => setCardNumber(e.target.value)}
-            placeholder="رقم البطاقة"
+            placeholder={t('رقم البطاقة')}
             data-testid="card-number"
           />
-          <button onClick={handlePayOrder} data-testid="pay">دفع</button>
+          <button onClick={handlePayOrder} data-testid="pay">{t('دفع')}</button>
           {paymentResult && (
-            <h2 data-testid="payment-result">نتيجة الدفع: {paymentResult === 'paid' ? 'تم الدفع' : 'مرفوض'}</h2>
+            <h2 data-testid="payment-result">{t('نتيجة الدفع:')} {paymentResult === 'paid' ? t('تم الدفع') : t('مرفوض')}</h2>
           )}
           {errorMessage && (
-            <h2 data-testid="error-message">خطأ: {errorMessage}</h2>
+            <h2 data-testid="error-message">{t('خطأ:')} {errorMessage}</h2>
           )}
         </>
       )}

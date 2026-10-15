@@ -14,3 +14,7 @@ db.json.*
 .chrome-*/
 .vercel
 .env*
+.neon
+.neon/
+.env.local
+neon.ts

@@ -12,6 +12,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+app.use(require('./data-middleware')({ ready: db.ready, refresh: db.refresh, flush: () => db.store.flush() }));
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(BASE_DIR, 'uploads');
@@ -51,6 +52,9 @@ const requireAuth = (req, res, next) => {
     const user = db.getUserById(decoded.id);
     if (!user) {
       return res.status(401).json({ error: 'غير مصرح' });
+    }
+    if (user.disabled) {
+      return res.status(403).json({ error: 'تم تعطيل هذا الحساب' });
     }
     req.user = user;
     next();
@@ -364,7 +368,7 @@ app.post('/api/auth/register', async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const newUser = db.createUser(name, email, passwordHash);
   const token = generateToken(newUser);
-  res.status(201).json({ user: { id: newUser.id, name: newUser.name, email: newUser.email }, token });
+  res.status(201).json({ user: { id: newUser.id, name: newUser.name, email: newUser.email, role: 'user' }, token });
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -376,13 +380,19 @@ app.post('/api/auth/login', async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     return res.status(401).json({ error: 'البريد أو كلمة المرور غير صحيحة' });
   }
+  if (user.disabled) {
+    return res.status(403).json({ error: 'تم تعطيل هذا الحساب' });
+  }
   const token = generateToken(user);
-  res.json({ user: { id: user.id, name: user.name, email: user.email }, token });
+  res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role || 'user' }, token });
 });
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
-  res.json({ id: req.user.id, name: req.user.name, email: req.user.email });
+  res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role || 'user' });
 });
+
+// Admin dashboard API
+require('./admin-routes')(app, { db, requireAuth });
 
 // Final error handler
 app.use((err, req, res, next) => {

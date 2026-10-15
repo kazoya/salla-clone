@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { t } from '../i18n';
 
 const AuthForm = ({ mode, onRegister, onLogin, error, onToggleMode }) => {
   const [name, setName] = useState('');
@@ -23,7 +24,7 @@ const AuthForm = ({ mode, onRegister, onLogin, error, onToggleMode }) => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="اسم المستخدم"
+            placeholder={t('اسم المستخدم')}
             data-testid="auth-name"
           />
         )}
@@ -31,21 +32,21 @@ const AuthForm = ({ mode, onRegister, onLogin, error, onToggleMode }) => {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="البريد الإلكتروني"
+          placeholder={t('البريد الإلكتروني')}
           data-testid="auth-email"
         />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="كلمة المرور"
+          placeholder={t('كلمة المرور')}
           data-testid="auth-password"
         />
         <button type="submit" data-testid="auth-submit">
-          {mode === 'register' ? 'إنشاء حساب' : 'تسجيل الدخول'}
+          {mode === 'register' ? t('إنشاء حساب') : t('تسجيل الدخول')}
         </button>
         <button type="button" onClick={() => { onToggleMode(); }} data-testid="auth-toggle">
-          {mode === 'register' ? 'تسجيل الدخول' : 'إنشاء حساب'}
+          {mode === 'register' ? t('تسجيل الدخول') : t('إنشاء حساب')}
         </button>
       </form>
     </div>

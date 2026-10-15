@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { t, tf, getLang } from '../i18n';
 import { fetchProductsByStoreId, createProduct, deleteProduct, uploadProductImage } from '../api';
 
 const StorePage = ({ store, onAddToCart, user }) => {
@@ -63,38 +64,41 @@ const StorePage = ({ store, onAddToCart, user }) => {
         setError(err.message);
       }
     } else {
-      setError('حجم الملف يجب أن يكون أقل من 2MB');
+      setError(t('حجم الملف يجب أن يكون أقل من 2MB'));
     }
   };
 
   return (
     <div>
-      <h1>منتجات المتجر</h1>
+      <h1>{store ? tf(store, 'name') : t('منتجات المتجر')}</h1>
       {error && <div data-testid="error-message">{error}</div>}
       {user && user.id === store.ownerId && (
-        <div>
+        <div className="inline-form">
           <input
             type="text"
             value={newProductName}
             onChange={(e) => setNewProductName(e.target.value)}
-            placeholder="اسم المنتج الجديد"
+            placeholder={t('اسم المنتج الجديد')}
             data-testid="new-product-name"
           />
           <input
             type="number"
             value={newProductPrice}
             onChange={(e) => setNewProductPrice(e.target.value)}
-            placeholder="سعر المنتج الجديد"
+            placeholder={t('سعر المنتج الجديد')}
             data-testid="new-product-price"
           />
-          <button onClick={handleCreateProduct} data-testid="create-product">إنشاء منتج</button>
+          <button onClick={handleCreateProduct} data-testid="create-product">{t('إنشاء منتج')}</button>
         </div>
       )}
-      <ul>
+      <ul className="product-grid">
         {products.map(product => (
-          <li key={product.id} data-testid="product-item">
-            {product.name} - {product.price}
-            {product.imageUrl && <img src={product.imageUrl} alt={product.name} data-testid="product-image" />}
+          <li key={product.id} data-testid="product-item" className="product-card">
+            {product.imageUrl ? <img src={product.imageUrl} alt={tf(product, 'name')} data-testid="product-image" loading="lazy" /> : <div className="product-ph" aria-hidden="true" />}
+            <div className="product-body">
+              <span className="product-name">{tf(product, 'name')}</span>
+              <span className="price"><bdi>{Number(product.price).toLocaleString(getLang() === 'ar' ? 'ar-SA' : 'en-US')}</bdi> {t('ريال')}</span>
+            </div>
             {user && user.id === store.ownerId && (
               <input
                 type="file"
@@ -104,13 +108,12 @@ const StorePage = ({ store, onAddToCart, user }) => {
               />
             )}
             {user && user.id === store.ownerId && (
-              <button onClick={() => handleDeleteProduct(product.id)} data-testid="delete-product">حذف</button>
+              <button onClick={() => handleDeleteProduct(product.id)} data-testid="delete-product">{t('حذف')}</button>
             )}
-            <button onClick={() => onAddToCart(product.id)} data-testid="add-to-cart">أضف للسلة</button>
+            <button className="btn-cart" onClick={() => onAddToCart(product.id)} data-testid="add-to-cart">{t('أضف للسلة')}</button>
           </li>
         ))}
       </ul>
-      <button onClick={() => window.history.back()} data-testid="back">رجوع</button>
     </div>
   );
 };

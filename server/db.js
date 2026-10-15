@@ -1,39 +1,51 @@
 const fs = require('fs');
 const path = require('path');
-const BASE_DIR = process.env.VERCEL ? '/tmp' : __dirname; // Vercel: only /tmp is writable (demo data resets)
 const crypto = require('crypto');
 
-const dbPath = path.join(BASE_DIR, 'data', 'db.json');
+const { createStore: createDataStore } = require('./store');
+const { ensureAdmin } = require('./admin-seed');
+const seedData = require('./seed-data');
 
-function ensureDataDirectoryExists() {
-  const dataDir = path.join(BASE_DIR, 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-}
+const COLLECTIONS = ['stores', 'products', 'carts', 'orders', 'users'];
+const store = createDataStore({ collections: COLLECTIONS, sqliteFile: 'salla.sqlite', pgSchema: 'salla' });
 
-function readDb() {
-  const data = store.load();
-  for (const k of ['stores', 'products', 'carts', 'orders', 'users']) if (!data[k]) data[k] = [];
-  return data;
-}
+// In-memory copy of the data; the object identity never changes (refresh fills it in place)
+const db = { stores: [], products: [], carts: [], orders: [], users: [] };
 
 function writeDb(data) {
-  store.save(data);
+  return store.save(data);
 }
 
-ensureDataDirectoryExists();
-const store = require('./sqlite-store');
-let db = readDb();
+function fill(data) {
+  for (const k of COLLECTIONS) db[k] = Array.isArray(data[k]) ? data[k] : [];
+}
 
-// Demo seed (cold start on Vercel, or empty local DB): one sample store with products
-if (db.stores.length === 0) {
-  const demoStoreId = crypto.randomUUID();
-  db.stores.push({ id: demoStoreId, name: 'متجر تجريبي - عطور وهدايا', ownerId: null, demo: true });
-  for (const [name, price] of [['عطر العود الملكي', 249], ['شمعة معطرة', 59], ['باقة ورد جوري', 120], ['بخور فاخر', 89]]) {
-    db.products.push({ id: crypto.randomUUID(), storeId: demoStoreId, name, price });
+// Demo seed: runs when the demo catalogue is missing (cold start on Vercel, fresh DB, or new Postgres)
+function seedDemo() {
+  if (db.stores.some((s) => s.demo)) return false;
+  for (const s of seedData.stores) {
+    const storeId = crypto.randomUUID();
+    db.stores.push({ id: storeId, name: s.name, nameEn: s.nameEn, ownerId: null, demo: true });
+    for (const [slug, name, nameEn, price] of s.products) {
+      db.products.push({ id: crypto.randomUUID(), storeId, name, nameEn, price, imageUrl: `/demo/${slug}.svg`, demo: true });
+    }
   }
-  writeDb(db);
+  return true;
+}
+
+const ready = store.init().then((data) => {
+  fill(data);
+  const seeded = seedDemo();
+  const admin = ensureAdmin(db.users);
+  if (seeded || admin) writeDb(db);
+  return store.flush();
+});
+
+async function refresh() {
+  if (store.kind !== 'postgres') return;
+  const fresh = {};
+  await store.refresh(fresh);
+  fill(fresh);
 }
 
 function getStores() {
@@ -216,14 +228,14 @@ function getOrders() {
 }
 
 function createUser(name, email, passwordHash) {
-  const newUser = { id: crypto.randomUUID(), name, email, passwordHash };
+  const newUser = { id: crypto.randomUUID(), name, email, passwordHash, role: 'user', createdAt: new Date().toISOString() };
   db.users.push(newUser);
   writeDb(db);
   return newUser;
 }
 
 function getUserByEmail(email) {
-  return db.users.find(user => user.email === email);
+  return db.users.find(user => (user.email || '').toLowerCase() === String(email || '').toLowerCase());
 }
 
 function getUserById(id) {
@@ -231,6 +243,11 @@ function getUserById(id) {
 }
 
 module.exports = {
+  ready,
+  refresh,
+  store,
+  data: db,
+  save: () => writeDb(db),
   getStores,
   createStore,
   getStoreById,

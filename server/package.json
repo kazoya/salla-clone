@@ -4,13 +4,17 @@
   "description": "Salla clone server",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node --env-file-if-exists=../.env index.js",
+    "db:migrate": "node --env-file-if-exists=../.env scripts/db-migrate.js",
+    "db:seed": "node --env-file-if-exists=../.env scripts/db-seed.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.11.1",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "pg": "^8.23.1"
   }
 }

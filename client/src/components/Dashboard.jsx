@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { t } from '../i18n';
 import { getMyStats, getMyOrders, shipOrder } from '../api';
 
 const Dashboard = () => {
@@ -33,29 +34,29 @@ const Dashboard = () => {
   return (
     <div>
       {error && <p data-testid="error-message">{error}</p>}
-      <h2>لوحة التحكم</h2>
+      <h2>{t('لوحة التحكم')}</h2>
       <div>
-        <p data-testid="stat-stores">المتاجر: {stats.storeCount}</p>
-        <p data-testid="stat-products">المنتجات: {stats.productCount}</p>
-        <p data-testid="stat-orders">الطلبات: {stats.orderCount}</p>
-        <p data-testid="stat-revenue">الإيرادات: {stats.paidRevenue} ريال</p>
+        <p data-testid="stat-stores">{t('المتاجر:')} {stats.storeCount}</p>
+        <p data-testid="stat-products">{t('المنتجات:')} {stats.productCount}</p>
+        <p data-testid="stat-orders">{t('الطلبات:')} {stats.orderCount}</p>
+        <p data-testid="stat-revenue">{t('الإيرادات:')} {stats.paidRevenue} {t('ريال')}</p>
       </div>
-      <h3>طلباتي</h3>
+      <h3>{t('طلباتي')}</h3>
       <ul>
         {orders.map(order => (
           <li key={order.id} data-testid="dash-order">
-            <p>التاريخ: {new Date(order.createdAt).toLocaleDateString()}</p>
-            <p>اسم العميل: {order.customerName}</p>
-            <p>رقم الهاتف: {order.phone}</p>
+            <p>{t('التاريخ:')} {new Date(order.createdAt).toLocaleDateString()}</p>
+            <p>{t('اسم العميل:')} {order.customerName}</p>
+            <p>{t('رقم الهاتف:')} {order.phone}</p>
             <ul>
               {order.items.map(item => (
                 <li key={item.productId}>{item.productName} x {item.qty}</li>
               ))}
             </ul>
-            <p>الإجمالي: {order.ownerTotal} ريال</p>
-            <p>الحالة: {order.status === 'pending_payment' ? 'بانتظار الدفع' : order.status === 'paid' ? 'مدفوع' : 'تم الشحن'}</p>
+            <p>{t('الإجمالي:')} {order.ownerTotal} {t('ريال')}</p>
+            <p>{t('الحالة:')} {order.status === 'pending_payment' ? t('بانتظار الدفع') : order.status === 'paid' ? t('مدفوع') : t('تم الشحن')}</p>
             {order.status === 'paid' && (
-              <button data-testid="ship-order" onClick={() => handleShipOrder(order.id)}>تم الشحن</button>
+              <button data-testid="ship-order" onClick={() => handleShipOrder(order.id)}>{t('تم الشحن')}</button>
             )}
           </li>
         ))}

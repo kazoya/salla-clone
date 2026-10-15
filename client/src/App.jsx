@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { t, useLang } from './i18n';
+import { useTheme } from './theme';
+import AdminPanel from './components/AdminPanel';
 import { fetchStores, createStore, addOrUpdateCartItem, getCartItems, register, login, me, logout } from './api';
 import StoreList from './components/StoreList';
 import StorePage from './components/StorePage';
@@ -9,6 +12,9 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 
 const App = () => {
+  useLang();
+  useTheme();
+  const [showAdmin, setShowAdmin] = useState(false);
   const [stores, setStores] = useState([]);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || crypto.randomUUID());
@@ -110,20 +116,32 @@ const App = () => {
   const selectedStore = stores.find(store => store.id === selectedStoreId);
 
   return (
-    <div dir="rtl">
-      <Header user={user} onLogout={handleLogout} onDashboard={() => setShowDashboard(true)} />
+    <div className="app">
+      <Header
+        user={user}
+        onLogout={() => { handleLogout(); setShowAdmin(false); setShowDashboard(false); }}
+        onDashboard={() => { setShowAdmin(false); setShowDashboard(true); }}
+        onAdmin={() => { setShowDashboard(false); setShowAdmin(true); }}
+        onHome={() => { setShowAdmin(false); setShowDashboard(false); setSelectedStoreId(null); }}
+      />
+      <main>
       {user ? (
         <div>
-          {showDashboard ? (
+          {showAdmin && user.role === 'admin' ? (
             <div>
-              <button onClick={() => setShowDashboard(false)} data-testid="back">رجوع</button>
+              <button className="btn-ghost back" onClick={() => setShowAdmin(false)} data-testid="back">{t('رجوع')}</button>
+              <AdminPanel />
+            </div>
+          ) : showDashboard ? (
+            <div>
+              <button className="btn-ghost back" onClick={() => setShowDashboard(false)} data-testid="back">{t('رجوع')}</button>
               <Dashboard />
             </div>
           ) : (
             <>
               {selectedStoreId ? (
                 <div>
-                  <button onClick={handleGoBack} data-testid="back">رجوع</button>
+                  <button className="btn-ghost back" onClick={handleGoBack} data-testid="back">{t('رجوع')}</button>
                   <StorePage store={selectedStore} onAddToCart={handleAddToCart} user={user} />
                   <Cart sessionId={sessionId} cartItems={cartItems} />
                   {cartItems.items.length > 0 && <Checkout sessionId={sessionId} />}
@@ -143,6 +161,7 @@ const App = () => {
           onToggleMode={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
         />
       )}
+      </main>
     </div>
   );
 };
