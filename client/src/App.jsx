@@ -10,11 +10,14 @@ import Checkout from './components/Checkout';
 import AuthForm from './components/AuthForm';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
+import TrackOrder from './components/TrackOrder';
+import { shop } from './commerceApi';
 
 const App = () => {
   useLang();
   useTheme();
   const [showAdmin, setShowAdmin] = useState(false);
+  const [track, setTrack] = useState(null); // {code, phone} when the tracking page is open
   const [stores, setStores] = useState([]);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || crypto.randomUUID());
@@ -72,14 +75,10 @@ const App = () => {
     setSelectedStoreId(null);
   };
 
-  const handleAddToCart = async (productId) => {
-    try {
-      await addOrUpdateCartItem(sessionId, productId, 1);
-      const updatedCartItems = await getCartItems(sessionId);
-      setCartItems(updatedCartItems);
-    } catch (error) {
-      console.error(error);
-    }
+  const refreshCart = () => shop.cart(sessionId).then(setCartItems).catch(() => {});
+  const handleAddToCart = async (productId, options) => {
+    const updated = await shop.addToCart(sessionId, productId, 1, options);
+    setCartItems(updated);
   };
 
   const handleRegister = async (name, email, password) => {
@@ -122,10 +121,16 @@ const App = () => {
         onLogout={() => { handleLogout(); setShowAdmin(false); setShowDashboard(false); }}
         onDashboard={() => { setShowAdmin(false); setShowDashboard(true); }}
         onAdmin={() => { setShowDashboard(false); setShowAdmin(true); }}
-        onHome={() => { setShowAdmin(false); setShowDashboard(false); setSelectedStoreId(null); }}
+        onHome={() => { setTrack(null); setShowAdmin(false); setShowDashboard(false); setSelectedStoreId(null); }}
+        onTrack={() => setTrack({ code: '', phone: '' })}
       />
       <main>
-      {user ? (
+      {track ? (
+        <div>
+          <button className="btn-ghost back" onClick={() => setTrack(null)} data-testid="back">{t('رجوع')}</button>
+          <TrackOrder key={track.code} initialCode={track.code} initialPhone={track.phone} />
+        </div>
+      ) : user ? (
         <div>
           {showAdmin && user.role === 'admin' ? (
             <div>
@@ -143,8 +148,10 @@ const App = () => {
                 <div>
                   <button className="btn-ghost back" onClick={handleGoBack} data-testid="back">{t('رجوع')}</button>
                   <StorePage store={selectedStore} onAddToCart={handleAddToCart} user={user} />
-                  <Cart sessionId={sessionId} cartItems={cartItems} />
-                  {cartItems.items.length > 0 && <Checkout sessionId={sessionId} />}
+                  <div className="buy-area">
+                    <Cart sessionId={sessionId} cartItems={cartItems} onChange={refreshCart} />
+                    {cartItems.items.length > 0 && <Checkout key={cartItems.items.length ? 'c' : 'e'} sessionId={sessionId} onTrack={(code, phone) => { refreshCart(); setTrack({ code, phone }); }} />}
+                  </div>
                 </div>
               ) : (
                 <StoreList stores={stores} onSelectStore={handleSelectStore} user={user} onStoreCreated={handleStoreCreated} />

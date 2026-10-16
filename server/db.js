@@ -6,11 +6,11 @@ const { createStore: createDataStore } = require('./store');
 const { ensureAdmin } = require('./admin-seed');
 const seedData = require('./seed-data');
 
-const COLLECTIONS = ['stores', 'products', 'carts', 'orders', 'users'];
+const COLLECTIONS = ['stores', 'products', 'carts', 'orders', 'users', 'coupons'];
 const store = createDataStore({ collections: COLLECTIONS, sqliteFile: 'salla.sqlite', pgSchema: 'salla' });
 
 // In-memory copy of the data; the object identity never changes (refresh fills it in place)
-const db = { stores: [], products: [], carts: [], orders: [], users: [] };
+const db = { stores: [], products: [], carts: [], orders: [], users: [], coupons: [] };
 
 function writeDb(data) {
   return store.save(data);
@@ -41,8 +41,9 @@ function ready() {
     readyPromise = store.init().then((data) => {
       fill(data);
       const seeded = seedDemo();
+      const upgraded = require('./commerce').upgradeDemo(db);
       const admin = ensureAdmin(db.users);
-      if (seeded || admin) writeDb(db);
+      if (seeded || upgraded || admin) writeDb(db);
       return store.flush();
     }).catch((e) => { readyPromise = null; throw e; });
   }

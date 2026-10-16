@@ -18,3 +18,4 @@ db.json.*
 .neon/
 .env.local
 neon.ts
+graphify-out/

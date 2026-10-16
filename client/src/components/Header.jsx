@@ -2,7 +2,7 @@ import React from 'react';
 import { t } from '../i18n';
 import Toggles from './Toggles';
 
-const Header = ({ user, onLogout, onDashboard, onAdmin, onHome }) => {
+const Header = ({ user, onLogout, onDashboard, onAdmin, onHome, onTrack }) => {
   return (
     <header className="site-header">
       <button type="button" className="brand" onClick={onHome} data-testid="brand">
@@ -10,6 +10,7 @@ const Header = ({ user, onLogout, onDashboard, onAdmin, onHome }) => {
         <span>{t('سلة')}</span>
       </button>
       <nav className="nav">
+        <button className="btn-ghost" onClick={onTrack} data-testid="nav-track">{t('تتبع الطلب')}</button>
         {user ? (
           <>
             <span className="user-chip" data-testid="user-name">{user.name}</span>

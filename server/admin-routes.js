@@ -2,7 +2,7 @@
 const requireAdmin = require('./require-admin');
 
 const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role || 'user', disabled: !!u.disabled, createdAt: u.createdAt || null });
-const ORDER_STATUSES = ['pending_payment', 'paid', 'shipped', 'cancelled'];
+const ORDER_STATUSES = ['pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 module.exports = function mountAdmin(app, { db, requireAuth }) {
   const d = db.data;

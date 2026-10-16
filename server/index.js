@@ -69,7 +69,7 @@ function ownerView(order, userId) {
     return store && store.ownerId === userId;
   });
   if (items.length === 0) return null;
-  return { id: order.id, createdAt: order.createdAt, status: order.status, customerName: order.customerName,
+  return { id: order.id, trackingCode: order.trackingCode, shippingMethod: order.shippingMethod, createdAt: order.createdAt, status: order.status, customerName: order.customerName,
     phone: order.phone, address: order.address, items, ownerTotal: items.reduce((s, it) => s + it.lineTotal, 0) };
 }
 
@@ -230,74 +230,6 @@ app.post('/api/products/:id/image', requireAuth, upload, async (req, res) => {
 });
 
 // Cart and Orders routes
-app.post('/api/cart', (req, res) => {
-  const { sessionId, productId, qty } = req.body;
-  if (!sessionId || !productId || !Number.isInteger(qty) || qty < 1) {
-    return res.status(400).json({ error: 'البيانات غير صالحة' });
-  }
-  const product = db.getProductById(productId);
-  if (!product) {
-    return res.status(404).json({ error: 'المنتج غير موجود' });
-  }
-  const cartItem = db.addOrUpdateCartItem(sessionId, productId, qty);
-  res.status(201).json(cartItem);
-});
-
-app.get('/api/cart/:sessionId', (req, res) => {
-  const { sessionId } = req.params;
-  const cartItems = db.getCartItems(sessionId);
-  if (!cartItems) {
-    return res.json({ items: [], cartTotal: 0 });
-  }
-  res.json(cartItems);
-});
-
-app.delete('/api/cart/:sessionId/:productId', (req, res) => {
-  const { sessionId, productId } = req.params;
-  const success = db.deleteCartItem(sessionId, productId);
-  if (!success) {
-    return res.status(404).json({ error: 'السلة غير موجودة' });
-  }
-  res.status(204).send();
-});
-
-app.post('/api/orders', (req, res) => {
-  const { sessionId, customerName, phone, address } = req.body;
-  if (!sessionId || !customerName || !phone || !address) {
-    return res.status(400).json({ error: 'البيانات غير صالحة' });
-  }
-  const cartItems = db.getCartItems(sessionId);
-  if (!cartItems || cartItems.items.length === 0) {
-    return res.status(400).json({ error: 'السلة فارغة' });
-  }
-  const orderId = db.createOrder(sessionId, customerName, phone, address);
-  if (!orderId) {
-    return res.status(404).json({ error: 'السلة غير موجودة' });
-  }
-  res.status(201).json({ orderId });
-});
-
-app.post('/api/orders/:id/pay', (req, res) => {
-  const { id } = req.params;
-  const { cardNumber } = req.body;
-  if (!cardNumber) {
-    return res.status(400).json({ error: 'البيانات غير صالحة' });
-  }
-  const order = db.getOrderById(id);
-  if (!order) {
-    return res.status(404).json({ error: 'الطلب غير موجود' });
-  }
-  const result = db.payOrder(id, cardNumber);
-  if (result === 'not_found') {
-    return res.status(404).json({ error: 'الطلب غير موجود' });
-  } else if (result === 'already_paid') {
-    return res.status(409).json({ error: 'الطلب مدفوع بالفعل' });
-  } else if (result === 'declined') {
-    return res.status(402).json({ error: 'الدفع مرفوض' });
-  }
-  res.json({ status: 'paid' });
-});
-
 // Owner dashboard API endpoints
 app.get('/api/my/stores', requireAuth, (req, res) => {
   const stores = db.getStores().filter(store => store.ownerId === req.user.id);
@@ -325,28 +257,6 @@ app.get('/api/my/stats', requireAuth, (req, res) => {
     return total;
   }, 0);
   res.json({ storeCount, productCount, orderCount, paidRevenue });
-});
-
-app.patch('/api/my/orders/:id/status', requireAuth, (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  if (status !== 'shipped') {
-    return res.status(400).json({ error: 'الحالة المطلوبة غير صالحة' });
-  }
-  const order = db.getOrderById(id);
-  if (!order) {
-    return res.status(404).json({ error: 'الطلب غير موجود' });
-  }
-  const ownerOrder = ownerView(order, req.user.id);
-  if (!ownerOrder) {
-    return res.status(403).json({ error: 'الطلب لا ينتمي إلى متجرك' });
-  }
-  if (order.status !== 'paid') {
-    return res.status(409).json({ error: 'الطلب يجب أن يكون مدفوعًا أولاً' });
-  }
-  order.status = status;
-  db.updateOrder(id, order);
-  res.json({ status: order.status });
 });
 
 // Auth routes
@@ -392,6 +302,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 // Admin dashboard API
+require('./commerce').mount(app, { db, data: db.data, save: db.save, requireAuth });
 require('./admin-routes')(app, { db, requireAuth });
 
 // Final error handler
